@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Tugkaran POS",
-    "slug": "tugkaran-pos",
+    "slug": "tugkaran",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,23 +10,22 @@
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1a1a2e"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.tugkaran.pos"
+      "backgroundColor": "#402010",
+      "imageWidth": 578
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#1a1a2e"
+        "backgroundColor": "#402010"
       },
       "package": "com.tugkaran.pos"
     },
     "web": {
-      "bundler": "metro",
-      "output": "static",
       "favicon": "./assets/images/favicon.png"
+    }, 
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tugkaran.pos"
     },
     "plugins": [
       "expo-router",
@@ -34,6 +33,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a69eff1f-4cdd-44cf-a673-39bee3a20857"
+      }
+    },
+    "owner": "jecson-caracuts-organization"
   }
 }

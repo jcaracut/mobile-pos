@@ -1,25 +1,25 @@
 export const colors = {
-  primary: '#6C63FF',
-  primaryDark: '#4A44B5',
-  secondary: '#FF6584',
-  success: '#4CAF50',
-  warning: '#FF9800',
-  danger: '#F44336',
-  info: '#2196F3',
+  primary: '#704020',
+  primaryDark: '#5A3319',
+  secondary: '#D4A574',
+  success: '#8B7355',
+  warning: '#F5A623',
+  danger: '#E74C3C',
+  info: '#3498DB',
 
-  background: '#F8F9FA',
+  background: '#FAF7F2',
   surface: '#FFFFFF',
-  surfaceAlt: '#F1F3F5',
-  border: '#E0E0E0',
+  surfaceAlt: '#F5EFE7',
+  border: '#E8DFD5',
 
-  textPrimary: '#1A1A2E',
-  textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
+  textPrimary: '#3D2817',
+  textSecondary: '#704020',
+  textMuted: '#A0926B',
   textOnPrimary: '#FFFFFF',
 
-  lowStock: '#FF9800',
-  outOfStock: '#F44336',
-  inStock: '#4CAF50',
+  lowStock: '#F5A623',
+  outOfStock: '#E74C3C',
+  inStock: '#8B7355',
 };
 
 export const spacing = {
