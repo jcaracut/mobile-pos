@@ -10,7 +10,6 @@ import {
   StyleSheet,
   Alert,
   TextInput,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../hooks/useCart';
@@ -19,13 +18,9 @@ import { useProducts } from '@features/inventory/hooks/useProducts';
 import { CartItemRow } from '../components/organisms/CartItemRow';
 import { EmptyState } from '@shared/components/ui/EmptyState';
 import { centsToPHP } from '@shared/utils/formatMoney';
+import { useResponsive } from '@shared/hooks/useResponsive';
 import { colors, spacing, radius, fontSize } from '@theme/index';
 import type { PaymentMethod } from '@core/database/models/Order';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TILE_COLS = 3;
-const TILE_GAP = spacing.sm;
-const TILE_WIDTH = (SCREEN_WIDTH - spacing.md * 2 - TILE_GAP * (TILE_COLS - 1)) / TILE_COLS;
 
 const PAYMENT_METHODS: { key: PaymentMethod; label: string; icon: string }[] = [
   { key: 'cash', label: 'Cash', icon: '💵' },
@@ -39,6 +34,10 @@ export function POSScreen() {
   const [search, setSearch] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [showCart, setShowCart] = useState(false);
+  const { width, isTablet } = useResponsive();
+  const TILE_COLS = isTablet ? 5 : 3;
+  const TILE_GAP = spacing.sm;
+  const TILE_WIDTH = (width - spacing.md * 2 - TILE_GAP * (TILE_COLS - 1)) / TILE_COLS;
 
   const { products } = useProducts(
     { ...(search.trim() ? { search: search.trim() } : {}), isActive: true },
@@ -88,11 +87,12 @@ export function POSScreen() {
         data={products}
         keyExtractor={(i) => i.product.id}
         numColumns={TILE_COLS}
+        key={TILE_COLS}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.tile}
+            style={[styles.tile, { width: TILE_WIDTH }]}
             onPress={() => cart.addItem(item.product)}
             activeOpacity={0.75}
           >
@@ -134,14 +134,14 @@ export function POSScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Cart bottom sheet */}
+      {/* Cart bottom sheet / tablet modal */}
       <Modal visible={showCart} transparent animationType="slide" onRequestClose={() => { if (!isProcessing) setShowCart(false); }}>
         <View style={styles.sheetOverlay}>
           <TouchableOpacity
             style={styles.sheetBackdrop}
             onPress={() => { if (!isProcessing) setShowCart(false); }}
           />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, isTablet && styles.sheetTablet]}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Cart ({cart.itemCount})</Text>
@@ -265,9 +265,8 @@ const styles = StyleSheet.create({
 
   // Product grid
   grid: { paddingHorizontal: spacing.md, paddingBottom: 120 },
-  row: { gap: TILE_GAP, marginBottom: TILE_GAP },
+  row: { gap: spacing.sm, marginBottom: spacing.sm },
   tile: {
-    width: TILE_WIDTH,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     padding: spacing.md,
@@ -308,14 +307,21 @@ const styles = StyleSheet.create({
   cartFabTotal: { fontSize: fontSize.md, fontWeight: '700', color: colors.textOnPrimary },
 
   // Cart bottom sheet
-  sheetOverlay: { flex: 1 },
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+  sheetOverlay: { flex: 1, justifyContent: 'flex-end' },
+  sheetBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     paddingBottom: spacing.xl,
     maxHeight: '85%',
+  },
+  sheetTablet: {
+    alignSelf: 'center',
+    width: 560,
+    marginBottom: 60,
+    borderRadius: radius.lg,
+    maxHeight: '80%',
   },
   sheetHandle: {
     width: 40,

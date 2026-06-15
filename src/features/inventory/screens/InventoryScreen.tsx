@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsive } from '@shared/hooks/useResponsive';
 import { useProducts } from '../hooks/useProducts';
 import { useLowStockAlerts } from '../hooks/useLowStockAlerts';
 import { InventoryService } from '../services/InventoryService';
@@ -24,6 +25,7 @@ import type { InventoryFilter, ProductWithStock } from '../types';
 export function InventoryScreen() {
   const [search, setSearch] = useState('');
   const [showInactive, setShowInactive] = useState(false);
+  const { isTablet } = useResponsive();
 
   const filter: InventoryFilter = {
     ...(search.trim() ? { search: search.trim() } : {}),
@@ -108,12 +110,17 @@ export function InventoryScreen() {
         <FlatList
           data={products}
           keyExtractor={(item) => item.product.id}
+          numColumns={isTablet ? 2 : 1}
+          key={isTablet ? 'tablet' : 'phone'}
+          columnWrapperStyle={isTablet ? styles.tabletRow : undefined}
           renderItem={({ item }) => (
-            <ProductCard
-              data={item}
-              onEdit={() => openEdit(item)}
-              onAdjustStock={() => openStockAdjust(item)}
-            />
+            <View style={isTablet ? styles.tabletCard : undefined}>
+              <ProductCard
+                data={item}
+                onEdit={() => openEdit(item)}
+                onAdjustStock={() => openStockAdjust(item)}
+              />
+            </View>
           )}
           ListEmptyComponent={
             <EmptyState
@@ -182,6 +189,8 @@ const styles = StyleSheet.create({
 
   list: { paddingBottom: 90 },
   emptyList: { flex: 1 },
+  tabletRow: { gap: spacing.md },
+  tabletCard: { flex: 1 },
 
   fab: {
     position: 'absolute',

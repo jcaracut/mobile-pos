@@ -12,8 +12,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InventoryService } from '../../services/InventoryService';
 import { useCategories } from '../../hooks/useCategories';
+import { useResponsive } from '@shared/hooks/useResponsive';
 import { colors, spacing, radius, fontSize } from '@theme/index';
 import type { ProductWithStock } from '../../types';
 
@@ -69,6 +71,8 @@ export function ProductFormModal({ visible, onClose, editing }: ProductFormModal
   const { categories } = useCategories();
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
+  const insets = useSafeAreaInsets();
+  const { isTablet } = useResponsive();
 
   useEffect(() => {
     if (visible) {
@@ -129,7 +133,10 @@ export function ProductFormModal({ visible, onClose, editing }: ProductFormModal
         style={styles.root}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.header}>
+        {/* Tablet: center the form in a max-width card */}
+        {isTablet && <View style={styles.tabletBackdrop} />}
+        <View style={[styles.formContainer, isTablet && styles.formContainerTablet]}>
+        <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
           <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
             <Text style={styles.headerBtnText}>Cancel</Text>
           </TouchableOpacity>
@@ -263,8 +270,9 @@ export function ProductFormModal({ visible, onClose, editing }: ProductFormModal
             </Section>
           )}
 
-          <View style={styles.bottomPad} />
+          <View style={[styles.bottomPad, { height: insets.bottom + spacing.xxl }]} />
         </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -291,13 +299,31 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
 
+  tabletBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  formContainer: { flex: 1 },
+  formContainerTablet: {
+    alignSelf: 'center',
+    width: 600,
+    marginVertical: 40,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },

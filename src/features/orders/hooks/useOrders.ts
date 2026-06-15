@@ -34,7 +34,9 @@ export function useOrders(filter: OrderFilter = {}): UseOrdersReturn {
       ...(constraints.map(([col, val]) => Q.where(col as string, val as string)))
     );
 
-    const sub = query.observe().subscribe((rows) => {
+    // observeWithColumns re-emits when `status` changes on a record already in
+    // the result set (e.g. cancel/void), not only when rows are added/removed.
+    const sub = query.observeWithColumns(['status']).subscribe((rows) => {
       let result = rows;
 
       // Client-side filters that WatermelonDB queries can't express as simply.
