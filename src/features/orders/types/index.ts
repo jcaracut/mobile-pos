@@ -34,7 +34,6 @@ export interface CreateOrderParams {
 export interface RefundOrderParams {
   orderId: string;
   reason: string;
-  restockItems: boolean;
 }
 
 // ── Read projections ──────────────────────────────────────────────────────────

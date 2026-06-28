@@ -12,68 +12,42 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsive } from '@shared/hooks/useResponsive';
 import { useProducts } from '../hooks/useProducts';
-import { useLowStockAlerts } from '../hooks/useLowStockAlerts';
 import { InventoryService } from '../services/InventoryService';
 import { ProductCard } from '../components/organisms/ProductCard';
-import { LowStockBanner } from '../components/organisms/LowStockBanner';
 import { ProductFormModal } from '../components/organisms/ProductFormModal';
-import { StockAdjustModal } from '../components/organisms/StockAdjustModal';
 import { EmptyState } from '@shared/components/ui/EmptyState';
 import { colors, spacing, radius, fontSize } from '@theme/index';
-import type { InventoryFilter, ProductWithStock } from '../types';
+import type { InventoryFilter, ProductRow } from '../types';
 
 export function InventoryScreen() {
   const [search, setSearch] = useState('');
-  const [showInactive, setShowInactive] = useState(false);
   const { isTablet } = useResponsive();
 
+  // Inventory lists every product (available and unavailable) so any can be toggled.
   const filter: InventoryFilter = {
     ...(search.trim() ? { search: search.trim() } : {}),
-    ...(showInactive ? {} : { isActive: true as const }),
   };
   const { products, isLoading } = useProducts(filter, { field: 'name', direction: 'asc' });
-  const { alerts, outOfStock } = useLowStockAlerts();
 
   const [formVisible, setFormVisible] = useState(false);
-  const [editTarget, setEditTarget] = useState<ProductWithStock | undefined>(undefined);
-
-  const [stockVisible, setStockVisible] = useState(false);
-  const [stockTarget, setStockTarget] = useState<ProductWithStock | null>(null);
+  const [editTarget, setEditTarget] = useState<ProductRow | undefined>(undefined);
 
   function openAdd() {
     setEditTarget(undefined);
     setFormVisible(true);
   }
 
-  function openEdit(item: ProductWithStock) {
+  function openEdit(item: ProductRow) {
     setEditTarget(item);
     setFormVisible(true);
   }
 
-  function openStockAdjust(item: ProductWithStock) {
-    setStockTarget(item);
-    setStockVisible(true);
-  }
-
-  function handleArchive(item: ProductWithStock) {
-    Alert.alert(
-      'Archive Product',
-      `"${item.product.name}" will be hidden from the POS. Sales history is preserved.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Archive',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await InventoryService.archiveProduct(item.product.id);
-            } catch (e) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to archive.');
-            }
-          },
-        },
-      ]
-    );
+  async function handleToggleAvailable(item: ProductRow, next: boolean) {
+    try {
+      await InventoryService.setAvailability(item.product.id, next);
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to update availability.');
+    }
   }
 
   if (isLoading) {
@@ -87,19 +61,13 @@ export function InventoryScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header row */}
         <View style={styles.headerRow}>
-          <Text style={styles.heading}>Inventory</Text>
-          <TouchableOpacity style={styles.toggleBtn} onPress={() => setShowInactive((v) => !v)}>
-            <Text style={styles.toggleBtnText}>{showInactive ? 'Active only' : 'Show all'}</Text>
-          </TouchableOpacity>
+          <Text style={styles.heading}>Products</Text>
         </View>
-
-        <LowStockBanner outOfStock={outOfStock} lowStock={alerts} />
 
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by name, SKU, or barcode…"
+          placeholder="Search products…"
           placeholderTextColor={colors.textMuted}
           value={search}
           onChangeText={setSearch}
@@ -118,7 +86,7 @@ export function InventoryScreen() {
               <ProductCard
                 data={item}
                 onEdit={() => openEdit(item)}
-                onAdjustStock={() => openStockAdjust(item)}
+                onToggleAvailable={(next) => handleToggleAvailable(item, next)}
               />
             </View>
           )}
@@ -144,12 +112,6 @@ export function InventoryScreen() {
         onClose={() => setFormVisible(false)}
         {...(editTarget !== undefined ? { editing: editTarget } : {})}
       />
-
-      <StockAdjustModal
-        visible={stockVisible}
-        onClose={() => { setStockVisible(false); setStockTarget(null); }}
-        data={stockTarget}
-      />
     </SafeAreaView>
   );
 }
@@ -166,15 +128,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   heading: { fontSize: fontSize.xxl, fontWeight: '700', color: colors.textPrimary },
-  toggleBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  toggleBtnText: { fontSize: fontSize.xs, color: colors.textSecondary },
 
   searchInput: {
     backgroundColor: colors.surface,

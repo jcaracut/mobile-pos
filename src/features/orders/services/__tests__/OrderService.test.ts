@@ -4,21 +4,20 @@
 import { Database } from '@nozbe/watermelondb';
 import { mockDatabase } from '@nozbe/watermelondb/utils/test';
 import { schema } from '@core/database/schema';
-import { Product, Inventory, Order, OrderItem, Customer, Category } from '@core/database/models';
+import { Product, Order, OrderItem, Customer, Category } from '@core/database/models';
 
 function makeDb(): Database {
   return mockDatabase({
     schema,
-    modelClasses: [Product, Inventory, Order, OrderItem, Customer, Category],
+    modelClasses: [Product, Order, OrderItem, Customer, Category],
   });
 }
 
 async function seedProduct(
   db: Database,
-  opts: { price: number; cost: number; quantity: number; sku?: string }
-): Promise<{ product: Product; inventory: Inventory }> {
+  opts: { price: number; cost: number; sku?: string }
+): Promise<Product> {
   let product!: Product;
-  let inventory!: Inventory;
 
   await db.write(async () => {
     product = await db.get<Product>('products').create((p) => {
@@ -28,22 +27,15 @@ async function seedProduct(
       p.cost = opts.cost;
       p.isActive = true;
     });
-
-    inventory = await db.get<Inventory>('inventory').create((inv) => {
-      inv.productId = product.id;
-      inv.quantity = opts.quantity;
-      inv.lowStockThreshold = 5;
-      inv.location = null;
-    });
   });
 
-  return { product, inventory };
+  return product;
 }
 
 describe('OrderService — createOrder', () => {
-  test('creates order, order items, and decrements inventory in one transaction', async () => {
+  test('creates order and order items in one transaction', async () => {
     const db = makeDb();
-    const { product, inventory } = await seedProduct(db, { price: 5000, cost: 2500, quantity: 20 });
+    const product = await seedProduct(db, { price: 5000, cost: 2500 });
 
     await db.write(async () => {
       const order = await db.get<Order>('orders').create((o) => {
@@ -68,10 +60,6 @@ describe('OrderService — createOrder', () => {
         oi.discountAmount = 1000;
         oi.total = 9000;
       });
-
-      await inventory.update((r) => {
-        r.quantity = Math.max(0, r.quantity - 2);
-      });
     });
 
     const orders = await db.get<Order>('orders').query().fetch();
@@ -81,9 +69,6 @@ describe('OrderService — createOrder', () => {
     const items = await db.get<OrderItem>('order_items').query().fetch();
     expect(items).toHaveLength(1);
     expect(items[0]?.quantity).toBe(2);
-
-    const inv = await db.get<Inventory>('inventory').find(inventory.id);
-    expect(inv.quantity).toBe(18);
   });
 
   test('tax calculation rounds to integer cents', () => {

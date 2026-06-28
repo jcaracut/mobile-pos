@@ -1,32 +1,28 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Badge } from '@shared/components/ui/Badge';
+import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import { colors, spacing, radius, fontSize } from '@theme/index';
 import { centsToPHP } from '@shared/utils/formatMoney';
-import { resolveStockStatus } from '../../types';
-import type { ProductWithStock } from '../../types';
+import type { ProductRow } from '../../types';
 
 interface ProductCardProps {
-  data: ProductWithStock;
+  data: ProductRow;
   onEdit?: () => void;
-  onAdjustStock?: () => void;
+  onToggleAvailable?: (next: boolean) => void;
 }
 
-const STATUS_VARIANT = { in_stock: 'success', low_stock: 'warning', out_of_stock: 'danger' } as const;
-const STATUS_LABEL = { in_stock: 'In Stock', low_stock: 'Low Stock', out_of_stock: 'Out of Stock' };
-
-export function ProductCard({ data, onEdit, onAdjustStock }: ProductCardProps) {
-  const { product, inventory, categoryName } = data;
-  const status = resolveStockStatus(inventory);
+export function ProductCard({ data, onEdit, onToggleAvailable }: ProductCardProps) {
+  const { product, categoryName } = data;
+  const available = product.isActive;
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, !available && styles.cardUnavailable]}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text style={styles.name} numberOfLines={1}>{product.name}</Text>
-          <Badge label={STATUS_LABEL[status]} variant={STATUS_VARIANT[status]} />
+          <Text style={[styles.name, !available && styles.nameMuted]} numberOfLines={1}>
+            {product.name}
+          </Text>
+          <Text style={styles.price}>{centsToPHP(product.price)}</Text>
         </View>
-        <Text style={styles.sku}>SKU: {product.sku}</Text>
         {categoryName !== null ? <Text style={styles.category}>{categoryName}</Text> : null}
         {product.description !== null && product.description.length > 0 ? (
           <Text style={styles.description} numberOfLines={2}>{product.description}</Text>
@@ -34,36 +30,23 @@ export function ProductCard({ data, onEdit, onAdjustStock }: ProductCardProps) {
       </View>
 
       <View style={styles.footer}>
-        <View>
-          <Text style={styles.metaLabel}>Price</Text>
-          <Text style={styles.price}>{centsToPHP(product.price)}</Text>
-        </View>
-        <View style={styles.stockBox}>
-          <Text style={styles.metaLabel}>Stock</Text>
-          <Text style={[styles.stock, status === 'out_of_stock' && styles.stockDanger]}>
-            {inventory?.quantity ?? '—'}
+        <View style={styles.availRow}>
+          <Switch
+            value={available}
+            onValueChange={(v) => onToggleAvailable?.(v)}
+            trackColor={{ true: colors.primary, false: colors.border }}
+            thumbColor={colors.surface}
+          />
+          <Text style={[styles.availLabel, available ? styles.availOn : styles.availOff]}>
+            {available ? 'Available' : 'Unavailable'}
           </Text>
         </View>
-        <View>
-          <Text style={styles.metaLabel}>Margin</Text>
-          <Text style={styles.margin}>{product.margin.toFixed(1)}%</Text>
-        </View>
+        {onEdit !== undefined && (
+          <TouchableOpacity style={styles.editBtn} onPress={onEdit} activeOpacity={0.7}>
+            <Text style={styles.editBtnText}>✏️ Edit</Text>
+          </TouchableOpacity>
+        )}
       </View>
-
-      {(onEdit !== undefined || onAdjustStock !== undefined) && (
-        <View style={styles.actions}>
-          {onAdjustStock !== undefined && (
-            <TouchableOpacity style={styles.actionBtn} onPress={onAdjustStock} activeOpacity={0.7}>
-              <Text style={styles.actionBtnText}>📦 Adjust Stock</Text>
-            </TouchableOpacity>
-          )}
-          {onEdit !== undefined && (
-            <TouchableOpacity style={[styles.actionBtn, styles.actionBtnEdit]} onPress={onEdit} activeOpacity={0.7}>
-              <Text style={[styles.actionBtnText, styles.actionBtnEditText]}>✏️ Edit</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
     </View>
   );
 }
@@ -77,6 +60,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  cardUnavailable: { opacity: 0.6 },
   header: { marginBottom: spacing.sm },
   titleRow: {
     flexDirection: 'row',
@@ -86,41 +70,30 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   name: { flex: 1, fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
-  sku: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  nameMuted: { color: colors.textMuted },
+  price: { fontSize: fontSize.md, fontWeight: '700', color: colors.primary },
   category: { fontSize: fontSize.xs, color: colors.primary, marginTop: 2 },
   description: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 4 },
+
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  metaLabel: { fontSize: fontSize.xs, color: colors.textMuted },
-  price: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
-  stockBox: { alignItems: 'center' },
-  stock: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
-  stockDanger: { color: colors.danger },
-  margin: { fontSize: fontSize.md, fontWeight: '700', color: colors.success },
+  availRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  availLabel: { fontSize: fontSize.sm, fontWeight: '600' },
+  availOn: { color: colors.primary },
+  availOff: { color: colors.textMuted },
 
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  actionBtn: {
-    flex: 1,
-    backgroundColor: colors.surfaceAlt,
+  editBtn: {
+    backgroundColor: colors.primary,
     borderRadius: radius.sm,
     paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  actionBtnEdit: { backgroundColor: colors.primary, borderColor: colors.primary },
-  actionBtnText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-  actionBtnEditText: { color: colors.textOnPrimary },
+  editBtnText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textOnPrimary },
 });

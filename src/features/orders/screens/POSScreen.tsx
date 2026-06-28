@@ -98,21 +98,6 @@ export function POSScreen() {
           >
             <Text style={styles.tileName} numberOfLines={2}>{item.product.name}</Text>
             <Text style={styles.tilePrice}>{centsToPHP(item.product.price)}</Text>
-            {item.inventory !== null && (
-              <View style={styles.tileStockRow}>
-                <View
-                  style={[
-                    styles.stockDot,
-                    item.inventory.quantity <= 0
-                      ? styles.stockDotOut
-                      : item.inventory.isLowStock
-                      ? styles.stockDotLow
-                      : styles.stockDotIn,
-                  ]}
-                />
-                <Text style={styles.tileStock}>{item.inventory.quantity} left</Text>
-              </View>
-            )}
           </TouchableOpacity>
         )}
         ListEmptyComponent={
@@ -277,12 +262,6 @@ const styles = StyleSheet.create({
   },
   tileName: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textPrimary, marginBottom: spacing.xs },
   tilePrice: { fontSize: fontSize.md, fontWeight: '700', color: colors.primary, marginBottom: spacing.xs },
-  tileStockRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  stockDot: { width: 6, height: 6, borderRadius: 3 },
-  stockDotIn: { backgroundColor: colors.inStock },
-  stockDotLow: { backgroundColor: colors.lowStock },
-  stockDotOut: { backgroundColor: colors.outOfStock },
-  tileStock: { fontSize: fontSize.xs, color: colors.textMuted },
 
   // Floating cart FAB
   cartFab: {

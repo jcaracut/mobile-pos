@@ -1,3 +1,4 @@
+import { Q } from '@nozbe/watermelondb';
 import { database } from '@core/database';
 import { Category } from '@core/database/models';
 import type { CreateCategoryParams } from '../types';
@@ -11,6 +12,15 @@ export class CategoryService {
         c.icon = params.icon ?? null;
       });
     });
+  }
+
+  /** Returns the category matching `name`, creating it if it does not yet exist. */
+  static async ensureByName(params: CreateCategoryParams): Promise<Category> {
+    const existing = await database
+      .get<Category>('categories')
+      .query(Q.where('name', params.name))
+      .fetch();
+    return existing[0] ?? this.create(params);
   }
 
   static async update(

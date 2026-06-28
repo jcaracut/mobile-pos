@@ -1,6 +1,5 @@
-import { Q } from '@nozbe/watermelondb';
 import { database } from '@core/database';
-import { Order, OrderItem, Inventory, Customer } from '@core/database/models';
+import { Order, OrderItem, Customer } from '@core/database/models';
 import type { CreateOrderParams, RefundOrderParams, OrderWithItems, ReceiptData } from '../types';
 
 export class OrderService {
@@ -45,9 +44,7 @@ export class OrderService {
         o.notes = notes ?? null;
       });
 
-      // Batch: create all order items + decrement inventory in a single write.
-      const invCollection = database.get<Inventory>('inventory');
-
+      // Batch: create all order items in a single write.
       for (const item of cart) {
         await database.get<OrderItem>('order_items').create((oi) => {
           oi.orderId = order.id;
@@ -58,16 +55,6 @@ export class OrderService {
           oi.discountAmount = item.discountAmount;
           oi.total = item.product.price * item.quantity - item.discountAmount;
         });
-
-        const [inv] = await invCollection
-          .query(Q.where('product_id', item.product.id))
-          .fetch();
-
-        if (inv) {
-          await inv.update((r) => {
-            r.quantity = Math.max(0, r.quantity - item.quantity);
-          });
-        }
       }
 
       // Update customer lifetime stats if linked.
@@ -109,23 +96,6 @@ export class OrderService {
         o.paymentStatus = 'refunded';
         o.notes = params.reason;
       });
-
-      if (params.restockItems) {
-        const items = await order.items.fetch();
-        const invCollection = database.get<Inventory>('inventory');
-
-        for (const item of items) {
-          const [inv] = await invCollection
-            .query(Q.where('product_id', item.productId))
-            .fetch();
-
-          if (inv) {
-            await inv.update((r) => {
-              r.quantity = r.quantity + item.quantity;
-            });
-          }
-        }
-      }
 
       // Reverse customer lifetime stats.
       if (order.customerId) {

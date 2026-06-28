@@ -25,7 +25,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="inventory"
-        options={{ title: 'Inventory', tabBarIcon: ({ color }) => <TabIcon icon="📦" color={color} /> }}
+        options={{ title: 'Products', tabBarIcon: ({ color }) => <TabIcon icon="📦" color={color} /> }}
       />
       <Tabs.Screen
         name="sales"
@@ -34,6 +34,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="orders"
         options={{ title: 'Orders', tabBarIcon: ({ color }) => <TabIcon icon="🧾" color={color} /> }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{ title: 'Settings', tabBarIcon: ({ color }) => <TabIcon icon="⚙️" color={color} /> }}
       />
     </Tabs>
   );
