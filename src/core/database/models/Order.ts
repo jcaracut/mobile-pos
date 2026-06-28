@@ -4,7 +4,7 @@ import type { Customer } from './Customer';
 import type { OrderItem } from './OrderItem';
 
 export type OrderStatus = 'pending' | 'completed' | 'cancelled' | 'refunded';
-export type PaymentMethod = 'cash' | 'card' | 'gcash' | 'maya' | 'bank_transfer';
+export type PaymentMethod = 'cash' | 'card' | 'gcash' | 'maya' | 'qr' | 'bank_transfer';
 export type PaymentStatus = 'unpaid' | 'paid' | 'partial' | 'refunded';
 
 export class Order extends Model {

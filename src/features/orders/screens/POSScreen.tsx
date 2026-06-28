@@ -12,6 +12,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCart } from '../hooks/useCart';
 import { useCheckout } from '../hooks/useCheckout';
 import { useProducts } from '@features/inventory/hooks/useProducts';
@@ -22,14 +23,31 @@ import { useResponsive } from '@shared/hooks/useResponsive';
 import { colors, spacing, radius, fontSize } from '@theme/index';
 import type { PaymentMethod } from '@core/database/models/Order';
 
-const PAYMENT_METHODS: { key: PaymentMethod; label: string; icon: string }[] = [
-  { key: 'cash', label: 'Cash', icon: '💵' },
-  { key: 'gcash', label: 'GCash', icon: '📱' },
-  { key: 'maya', label: 'Maya', icon: '💙' },
+const PAYMENT_METHODS: { key: PaymentMethod; label: string }[] = [
+  { key: 'cash', label: 'Cash' },
+  { key: 'gcash', label: 'GCash' },
+  { key: 'maya', label: 'Maya' },
+  { key: 'qr', label: 'QR' },
 ];
 
+/** Renders the appropriate vector icon for each supported payment method. */
+function PaymentIcon({ method, color }: { method: PaymentMethod; color: string }) {
+  const size = 22;
+  switch (method) {
+    case 'gcash':
+      return <MaterialCommunityIcons name="cellphone" size={size} color={color} />;
+    case 'maya':
+      return <MaterialCommunityIcons name="wallet-outline" size={size} color={color} />;
+    case 'qr':
+      return <Ionicons name="qr-code-outline" size={size} color={color} />;
+    case 'cash':
+    default:
+      return <MaterialCommunityIcons name="cash-multiple" size={size} color={color} />;
+  }
+}
+
 export function POSScreen() {
-  const cart = useCart(0.12);
+  const cart = useCart(0);
   const checkout = useCheckout();
   const [search, setSearch] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
@@ -159,7 +177,6 @@ export function POSScreen() {
                   color={colors.success}
                 />
               )}
-              <TotalRow label={`Tax (${(cart.taxRate * 100).toFixed(0)}%)`} value={centsToPHP(cart.totals.taxCents)} />
               <View style={styles.divider} />
               <TotalRow label="TOTAL" value={centsToPHP(cart.totals.totalCents)} bold />
             </View>
@@ -175,7 +192,10 @@ export function POSScreen() {
                     onPress={() => setPaymentMethod(m.key)}
                     disabled={isProcessing}
                   >
-                    <Text style={styles.payBtnIcon}>{m.icon}</Text>
+                    <PaymentIcon
+                      method={m.key}
+                      color={paymentMethod === m.key ? colors.textOnPrimary : colors.textSecondary}
+                    />
                     <Text style={[styles.payBtnText, paymentMethod === m.key && styles.payBtnTextActive]}>
                       {m.label}
                     </Text>
@@ -358,8 +378,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   payBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  payBtnIcon: { fontSize: 20 },
-  payBtnText: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2, fontWeight: '500' },
+  payBtnText: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 4, fontWeight: '500' },
   payBtnTextActive: { color: colors.textOnPrimary, fontWeight: '600' },
 
   errorText: { color: colors.danger, fontSize: fontSize.sm, marginBottom: spacing.sm, paddingHorizontal: spacing.md },

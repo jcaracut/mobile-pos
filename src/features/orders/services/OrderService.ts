@@ -179,7 +179,7 @@ export class OrderService {
       receipt.discountCents > 0
         ? pad('Discount', `-${centsToPHP(receipt.discountCents)}`)
         : '',
-      pad('Tax', centsToPHP(receipt.taxCents)),
+      receipt.taxCents > 0 ? pad('Tax', centsToPHP(receipt.taxCents)) : '',
       pad('TOTAL', centsToPHP(receipt.totalCents)),
       hr,
       pad('Payment', receipt.paymentMethod.toUpperCase()),

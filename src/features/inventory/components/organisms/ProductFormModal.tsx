@@ -39,11 +39,17 @@ interface CategoryOption {
   icon: string;
 }
 
-/** Default categories for a coffee-shop POS. */
+/** Default categories for a coffee-shop POS. Seeded on first open; users can add their own. */
 const DEFAULT_CATEGORIES = [
   { name: 'Drinks', color: '#3498DB', icon: '☕' },
   { name: 'Food', color: '#F5A623', icon: '🥐' },
+  { name: 'Snacks', color: '#E67E22', icon: '🍪' },
+  { name: 'Desserts', color: '#E84393', icon: '🍰' },
+  { name: 'Others', color: '#7F8C8D', icon: '📦' },
 ] as const;
+
+const CUSTOM_CATEGORY_ICON = '🏷️';
+const CUSTOM_CATEGORY_COLOR = '#7F8C8D';
 
 function emptyForm(): FormState {
   return { name: '', description: '', pricePHP: '', categoryId: '' };
@@ -74,30 +80,53 @@ function generateSku(name: string): string {
 export function ProductFormModal({ visible, onClose, editing }: ProductFormModalProps) {
   const [form, setForm] = useState<FormState>(emptyForm());
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
+  const [newCategory, setNewCategory] = useState('');
+  const [addingCategory, setAddingCategory] = useState(false);
   const [saving, setSaving] = useState(false);
   const insets = useSafeAreaInsets();
   const { isTablet } = useResponsive();
 
-  // Ensure the coffee-shop categories exist and expose them as selectable chips.
+  // Seed the default categories, then return every category (including
+  // user-created ones) as selectable chip options.
+  async function loadCategories(): Promise<CategoryOption[]> {
+    await Promise.all(DEFAULT_CATEGORIES.map((c) => CategoryService.ensureByName(c)));
+    const all = await CategoryService.getAll();
+    return all.map((cat) => ({
+      id: cat.id,
+      label: cat.name,
+      icon: cat.icon ?? CUSTOM_CATEGORY_ICON,
+    }));
+  }
+
   useEffect(() => {
     let active = true;
     (async () => {
-      const created = await Promise.all(
-        DEFAULT_CATEGORIES.map((c) => CategoryService.ensureByName(c))
-      );
+      const options = await loadCategories();
       if (!active) return;
-      setCategoryOptions(
-        created.map((cat, i) => ({
-          id: cat.id,
-          label: DEFAULT_CATEGORIES[i]!.name,
-          icon: DEFAULT_CATEGORIES[i]!.icon,
-        }))
-      );
+      setCategoryOptions(options);
     })();
     return () => {
       active = false;
     };
   }, []);
+
+  async function handleAddCategory() {
+    const name = newCategory.trim();
+    if (!name) return;
+    try {
+      const category = await CategoryService.ensureByName({
+        name,
+        color: CUSTOM_CATEGORY_COLOR,
+        icon: CUSTOM_CATEGORY_ICON,
+      });
+      setCategoryOptions(await loadCategories());
+      set('categoryId', category.id);
+      setNewCategory('');
+      setAddingCategory(false);
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to add category.');
+    }
+  }
 
   useEffect(() => {
     if (visible) {
@@ -215,7 +244,31 @@ export function ProductFormModal({ visible, onClose, editing }: ProductFormModal
                   </TouchableOpacity>
                 );
               })}
+              <TouchableOpacity
+                style={[styles.categoryChip, styles.categoryChipAdd]}
+                onPress={() => setAddingCategory((v) => !v)}
+              >
+                <Text style={[styles.categoryChipText, styles.categoryChipAddText]}>＋ New</Text>
+              </TouchableOpacity>
             </View>
+
+            {addingCategory && (
+              <View style={styles.newCategoryRow}>
+                <TextInput
+                  style={[styles.input, styles.newCategoryInput]}
+                  value={newCategory}
+                  onChangeText={setNewCategory}
+                  placeholder="New category name"
+                  placeholderTextColor={colors.textMuted}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleAddCategory}
+                />
+                <TouchableOpacity style={styles.newCategoryBtn} onPress={handleAddCategory}>
+                  <Text style={styles.newCategoryBtnText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </Section>
 
           <View style={[styles.bottomPad, { height: insets.bottom + spacing.xxl }]} />
@@ -326,6 +379,22 @@ const styles = StyleSheet.create({
   categoryChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   categoryChipText: { fontSize: fontSize.md, color: colors.textSecondary },
   categoryChipTextActive: { color: colors.textOnPrimary, fontWeight: '600' },
+  categoryChipAdd: {
+    backgroundColor: 'transparent',
+    borderStyle: 'dashed',
+    borderColor: colors.primary,
+  },
+  categoryChipAddText: { color: colors.primary, fontWeight: '600' },
+
+  newCategoryRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  newCategoryInput: { flex: 1 },
+  newCategoryBtn: {
+    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+  },
+  newCategoryBtnText: { color: colors.textOnPrimary, fontWeight: '700', fontSize: fontSize.md },
 
   bottomPad: { height: spacing.xxl },
 });
